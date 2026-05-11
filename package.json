@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "scan": "node scripts/scan.mjs",
+    "typecheck": "tsc --noEmit",
     "test:scan": "node scripts/test-scan.mjs",
     "test:privacy": "node scripts/test-privacy.mjs",
     "test:semantic": "node scripts/test-local-semantic.mjs",

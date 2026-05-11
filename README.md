@@ -76,6 +76,7 @@ Do not commit `.skill-universe/` or `.env.local`.
 ```bash
 npm run dev
 npm run build
+npm run typecheck
 npm run preview
 npm run scan
 npm run test:scan
@@ -87,6 +88,8 @@ npm run test:visual
 ```
 
 `test:visual` uses Playwright and may require browser dependencies in some environments.
+
+`test:scan` is a local integration test. It expects a real Codex skills directory on the machine running it, so it is not part of the default GitHub Actions workflow.
 
 ## Privacy
 

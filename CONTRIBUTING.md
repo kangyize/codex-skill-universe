@@ -15,9 +15,15 @@ Before opening a pull request, run:
 
 ```bash
 npm run build
+npm run typecheck
 npm run test:privacy
-npm run test:scan
 npm run test:recommendations
+```
+
+If you have a local Codex skills directory and changed scanner behavior, also run:
+
+```bash
+npm run test:scan
 ```
 
 If you change the UI, also run:

@@ -2,7 +2,7 @@
 
 Codex Skill Universe is a local web dashboard for exploring, organizing, and extending Codex skills. It scans local skills and plugin-contributed skills, builds a 3D "skill universe", explains similarity and overlap, recommends workflows, and helps turn a skill collection into a research workflow cockpit.
 
-The app is local-first. It does not require an OpenAI API key for the default experience. Optional OpenAI embeddings can be enabled later for stronger semantic clustering.
+The app is local-first. It does not require an OpenAI API key for the default experience. Optional OpenAI embeddings can be enabled for stronger semantic clustering, and optional OpenAI Responses API access enables AI Skill Doctor analysis.
 
 ## Features
 
@@ -16,6 +16,8 @@ The app is local-first. It does not require an OpenAI API key for the default ex
   - project gap radar
   - next-action suggestions
   - evidence-chain prompts
+- AI Skill Doctor for user-triggered skill analysis, repair suggestions, trigger-word cleanup, and Skill Group suggestions.
+- Local Skill Groups saved as reusable ordered workflows with a default prompt.
 - Layout presets, draggable/minimizable panels, local layout snapshots, performance modes, tags, and timeline history.
 - Privacy-first summaries for semantic processing. References and assets are not uploaded by default.
 
@@ -79,13 +81,21 @@ Use $codex-skill-universe to open my local Codex Skill Universe dashboard and re
 
 ## Configuration
 
-Copy `.env.example` to `.env.local` if you want optional embedding support:
+Copy `.env.example` to `.env.local` if you want optional OpenAI-powered embeddings or AI Skill Doctor support:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Default local mode works without `OPENAI_API_KEY`.
+Default local mode works without `OPENAI_API_KEY`. To enable AI Skill Doctor:
+
+```bash
+OPENAI_API_KEY=
+OPENAI_ANALYSIS_MODEL=gpt-4.1-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+`OPENAI_ANALYSIS_MODEL` defaults to `gpt-4.1-mini`. AI analysis uses the OpenAI [Responses API](https://platform.openai.com/docs/api-reference/responses) with [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses).
 
 The app reads `skill-universe.config.json` for scan and embedding settings. By default, references and assets are not sent to external APIs.
 
@@ -97,6 +107,7 @@ Runtime data is stored under `.skill-universe/` and is ignored by git. This can 
 - recommendation cache
 - screenshots from visual checks
 - local research project profiles
+- local Skill Groups in `skill-groups/*.json`
 - timeline and temporary state
 
 Do not commit `.skill-universe/` or `.env.local`.
@@ -112,6 +123,7 @@ npm run scan
 npm run test:scan
 npm run test:privacy
 npm run test:semantic
+npm run test:ai
 npm run test:watcher
 npm run test:recommendations
 npm run test:visual
@@ -128,8 +140,11 @@ Skill Universe is designed to be local-first:
 - It scans local `SKILL.md` files and plugin skill metadata.
 - It does not commit local caches, project profiles, logs, or API keys.
 - It does not upload references/assets text by default.
+- AI Skill Doctor is only triggered by user action and sends the selected `SKILL.md` frontmatter/body plus metadata and resource names, with local paths and secrets redacted.
+- AI Skill Group suggestions do not upload the full local skill catalog; the server asks AI about the selected skill and adds related companion skills locally.
 - Recommendation search sends only gap keywords to ClawHub.
 - Research Mission Mode stores project files locally in `.skill-universe/projects/*.json`.
+- Skill Groups are stored locally in `.skill-universe/skill-groups/*.json`.
 
 See [PRIVACY.md](PRIVACY.md) for more detail.
 

@@ -37,17 +37,27 @@ import {
   createInstallPlan,
   deepAuditCandidate,
   deleteResearchProject,
+  deleteSkillGroup,
+  analyzeSkillWithAi,
+  fetchAiStatus,
   fetchRecommendations,
   fetchResearchProjects,
+  fetchSkillGroups,
   fetchSkills,
   recomputeEmbeddings,
   refreshRecommendations,
   refreshSkills,
+  saveSkillGroup,
   saveResearchProject,
-  setActiveResearchProject
+  setActiveResearchProject,
+  suggestSkillGroupWithAi
 } from './lib/api';
+import { AiSkillDoctor } from './components/AiSkillDoctor';
+import { SkillGroupsPanel } from './components/SkillGroupsPanel';
 import { SkillUniverse } from './components/SkillUniverse';
 import type {
+  AiSkillAnalysis,
+  AiStatus,
   Cluster,
   DeepAuditReport,
   Insight,
@@ -63,6 +73,8 @@ import type {
   SkillCandidate,
   SkillCandidateAudit,
   SkillChangeNotice,
+  SkillGroupResponse,
+  SkillGroupSuggestion,
   SkillNode,
   SkillRecommendationResponse,
   SkillRelation,
@@ -90,7 +102,8 @@ const PANEL_LABELS: Record<PanelId, string> = {
   workflow: '工作流',
   installConsole: '安装方案',
   timeline: '时间轴',
-  researchMission: '科研任务'
+  researchMission: '科研任务',
+  skillGroups: 'Skill 组'
 };
 
 const PERFORMANCE_LABELS: Record<PerformanceMode, string> = {
@@ -110,7 +123,8 @@ const DEFAULT_LAYOUT: SkillUniverseLayoutState = {
     workflow: true,
     installConsole: false,
     timeline: false,
-    researchMission: false
+    researchMission: false,
+    skillGroups: false
   },
   pinned: {
     clusters: true,
@@ -120,7 +134,8 @@ const DEFAULT_LAYOUT: SkillUniverseLayoutState = {
     workflow: false,
     installConsole: false,
     timeline: true,
-    researchMission: false
+    researchMission: false,
+    skillGroups: false
   },
   positions: {},
   minimized: {},
@@ -147,7 +162,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       workflow: false,
       installConsole: true,
       timeline: false,
-      researchMission: true
+      researchMission: true,
+      skillGroups: false
     },
     pinned: {
       clusters: true,
@@ -157,7 +173,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       workflow: false,
       installConsole: false,
       timeline: true,
-      researchMission: false
+      researchMission: false,
+      skillGroups: false
     },
     positions: {},
     minimized: {},
@@ -174,7 +191,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       workflow: false,
       installConsole: false,
       timeline: false,
-      researchMission: false
+      researchMission: false,
+      skillGroups: false
     },
     pinned: DEFAULT_LAYOUT.pinned,
     positions: {},
@@ -192,7 +210,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       workflow: false,
       installConsole: false,
       timeline: false,
-      researchMission: false
+      researchMission: false,
+      skillGroups: false
     },
     pinned: DEFAULT_LAYOUT.pinned,
     positions: {},
@@ -285,7 +304,8 @@ function allPanelsVisible(value: boolean): SkillUniverseLayoutState['visible'] {
     workflow: value,
     installConsole: value,
     timeline: value,
-    researchMission: value
+    researchMission: value,
+    skillGroups: value
   };
 }
 
@@ -709,6 +729,7 @@ function PanelLauncher({
     { id: 'details', label: PANEL_LABELS.details, enabled: true },
     { id: 'recommendations', label: PANEL_LABELS.recommendations, enabled: true },
     { id: 'researchMission', label: PANEL_LABELS.researchMission, enabled: true },
+    { id: 'skillGroups', label: PANEL_LABELS.skillGroups, enabled: true },
     { id: 'workflow', label: PANEL_LABELS.workflow, enabled: activeWorkflow },
     { id: 'installConsole', label: PANEL_LABELS.installConsole, enabled: hasInstallCandidate },
     { id: 'timeline', label: PANEL_LABELS.timeline, enabled: true }
@@ -1048,6 +1069,11 @@ function SkillTagEditor({
 
 function SkillDetail({
   selected,
+  aiAnalysis,
+  aiGroupBusy,
+  aiGroupSuggestion,
+  aiStatus,
+  aiBusy,
   universe,
   skillsById,
   tags,
@@ -1056,6 +1082,9 @@ function SkillDetail({
   zIndex,
   onPositionChange,
   onUpdateTags,
+  onAnalyzeSkill,
+  onSuggestGroup,
+  onSaveGroup,
   onSelectSkill,
   onActivate,
   onMinimize,
@@ -1063,6 +1092,11 @@ function SkillDetail({
   onHide
 }: {
   selected: SkillNode | undefined;
+  aiAnalysis: AiSkillAnalysis | null;
+  aiGroupBusy: boolean;
+  aiGroupSuggestion: SkillGroupSuggestion | null;
+  aiStatus: AiStatus | null;
+  aiBusy: boolean;
   universe: SkillUniverseResponse;
   skillsById: Map<string, SkillNode>;
   tags: string[];
@@ -1071,6 +1105,9 @@ function SkillDetail({
   zIndex?: number;
   onPositionChange: (position: PanelPosition) => void;
   onUpdateTags: (skillId: string, tags: string[]) => void;
+  onAnalyzeSkill: (skillId: string) => void;
+  onSuggestGroup: (skillId: string) => void;
+  onSaveGroup: (group: SkillGroupSuggestion) => void;
   onSelectSkill: (id: string) => void;
   onActivate: () => void;
   onMinimize: () => void;
@@ -1138,6 +1175,17 @@ function SkillDetail({
       </div>
 
       <HealthBlock skill={selected} />
+      <AiSkillDoctor
+        skill={selected}
+        status={aiStatus}
+        analysis={aiAnalysis}
+        groupSuggestion={aiGroupSuggestion}
+        busy={aiBusy}
+        groupBusy={aiGroupBusy}
+        onAnalyze={onAnalyzeSkill}
+        onSuggestGroup={onSuggestGroup}
+        onSaveGroup={onSaveGroup}
+      />
       <SkillTagEditor skillId={selected.id} tags={tags} onChange={onUpdateTags} />
 
       <section className="detail-section">
@@ -2551,6 +2599,10 @@ export default function App() {
   const [timeline, setTimeline] = useState<SkillUniverseTimelineEvent[]>(() => loadTimeline());
   const [recommendations, setRecommendations] = useState<SkillRecommendationResponse | null>(null);
   const [researchMission, setResearchMission] = useState<ResearchMissionResponse | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [aiAnalyses, setAiAnalyses] = useState<Record<string, AiSkillAnalysis>>({});
+  const [aiGroupSuggestions, setAiGroupSuggestions] = useState<Record<string, SkillGroupSuggestion>>({});
+  const [skillGroups, setSkillGroups] = useState<SkillGroupResponse | null>(null);
   const [installPlan, setInstallPlan] = useState<InstallPlan | null>(null);
   const [selectedInstallCandidate, setSelectedInstallCandidate] = useState<SkillCandidate | null>(null);
   const [installCheckResult, setInstallCheckResult] = useState<InstallCheckResult | null>(null);
@@ -2565,6 +2617,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<'refresh' | 'embedding' | null>(null);
   const [projectBusy, setProjectBusy] = useState(false);
+  const [aiBusySkillId, setAiBusySkillId] = useState<string | null>(null);
+  const [aiGroupBusySkillId, setAiGroupBusySkillId] = useState<string | null>(null);
+  const [skillGroupsBusy, setSkillGroupsBusy] = useState(false);
   const [message, setMessage] = useState<string>('');
   const layoutSaveTimer = useRef<number | null>(null);
   const timelineSaveTimer = useRef<number | null>(null);
@@ -2608,6 +2663,9 @@ export default function App() {
     }
     if (panel === 'researchMission' && opening && !researchMission && !projectBusy) {
       void loadResearchMission();
+    }
+    if (panel === 'skillGroups' && opening && !skillGroups && !skillGroupsBusy) {
+      void loadSkillGroups();
     }
     setLayout((current) => {
       const shouldOpen = !current.visible[panel] || Boolean(current.minimized[panel]);
@@ -2658,6 +2716,9 @@ export default function App() {
     }
     if (panel === 'researchMission' && !researchMission && !projectBusy) {
       void loadResearchMission();
+    }
+    if (panel === 'skillGroups' && !skillGroups && !skillGroupsBusy) {
+      void loadSkillGroups();
     }
     setLayout((current) => ({
       ...current,
@@ -2727,6 +2788,8 @@ export default function App() {
       setUniverse(payload);
       setActiveClusterIds(new Set(payload.clusters.map((cluster) => cluster.id)));
       void loadResearchMission(false);
+      void loadAiStatus();
+      void loadSkillGroups(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '加载失败');
     } finally {
@@ -2744,6 +2807,27 @@ export default function App() {
       if (showMessage) setMessage(error instanceof Error ? error.message : '科研任务加载失败');
     } finally {
       setProjectBusy(false);
+    }
+  }
+
+  async function loadAiStatus() {
+    try {
+      setAiStatus(await fetchAiStatus());
+    } catch {
+      setAiStatus(null);
+    }
+  }
+
+  async function loadSkillGroups(showMessage = false) {
+    setSkillGroupsBusy(true);
+    try {
+      const payload = await fetchSkillGroups();
+      setSkillGroups(payload);
+      if (showMessage) setMessage(`Skill groups loaded: ${payload.groups.length}`);
+    } catch (error) {
+      if (showMessage) setMessage(error instanceof Error ? error.message : 'Skill groups failed to load');
+    } finally {
+      setSkillGroupsBusy(false);
     }
   }
 
@@ -3131,6 +3215,67 @@ export default function App() {
     }
   }
 
+  async function onAnalyzeSkillWithAi(skillId: string) {
+    setAiBusySkillId(skillId);
+    setMessage('');
+    try {
+      const analysis = await analyzeSkillWithAi(skillId);
+      setAiAnalyses((current) => ({ ...current, [skillId]: analysis }));
+      setMessage(`AI analysis complete: ${analysis.score}/100`);
+      recordEvent('ai-analysis', `AI checked ${skillsById.get(skillId)?.displayName ?? skillId}`, analysis.summary);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'AI analysis failed');
+    } finally {
+      setAiBusySkillId(null);
+    }
+  }
+
+  async function onSuggestSkillGroup(skillId: string) {
+    setAiGroupBusySkillId(skillId);
+    setMessage('');
+    try {
+      const suggestion = await suggestSkillGroupWithAi(skillId, aiAnalyses[skillId] ?? null);
+      setAiGroupSuggestions((current) => ({ ...current, [skillId]: suggestion }));
+      setMessage(`AI suggested skill group: ${suggestion.name}`);
+      recordEvent('skill-group', `Suggested group: ${suggestion.name}`, suggestion.purpose);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Skill group suggestion failed');
+    } finally {
+      setAiGroupBusySkillId(null);
+    }
+  }
+
+  async function onSaveAiSkillGroup(group: SkillGroupSuggestion) {
+    setSkillGroupsBusy(true);
+    setMessage('');
+    try {
+      const payload = await saveSkillGroup(group);
+      setSkillGroups(payload);
+      updatePanelVisibility('skillGroups', true);
+      setMessage(`Skill group saved: ${group.name}`);
+      recordEvent('skill-group', `Saved group: ${group.name}`, group.purpose);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Skill group save failed');
+    } finally {
+      setSkillGroupsBusy(false);
+    }
+  }
+
+  async function onDeleteSkillGroup(groupId: string) {
+    if (!window.confirm('Delete this local skill group?')) return;
+    setSkillGroupsBusy(true);
+    try {
+      const payload = await deleteSkillGroup(groupId);
+      setSkillGroups(payload);
+      setMessage('Skill group deleted');
+      recordEvent('skill-group', 'Deleted skill group', groupId);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Skill group delete failed');
+    } finally {
+      setSkillGroupsBusy(false);
+    }
+  }
+
   async function copyInstallCommand(command: string) {
     try {
       await navigator.clipboard.writeText(command);
@@ -3340,6 +3485,25 @@ export default function App() {
         />
       ) : null}
 
+      {layout.visible.skillGroups && !layout.minimized.skillGroups ? (
+        <SkillGroupsPanel
+          groups={skillGroups?.groups ?? []}
+          skillsById={skillsById}
+          busy={skillGroupsBusy}
+          pinned={layout.pinned.skillGroups}
+          position={layout.positions.skillGroups}
+          zIndex={layout.zOrder.skillGroups}
+          onPositionChange={(position) => updatePanelPosition('skillGroups', position)}
+          onSelectSkill={focusSkill}
+          onDeleteGroup={(groupId) => void onDeleteSkillGroup(groupId)}
+          onRefresh={() => void loadSkillGroups(true)}
+          onActivate={() => bringPanelToFront('skillGroups')}
+          onMinimize={() => minimizePanel('skillGroups')}
+          onTogglePinned={() => updatePanelPinned('skillGroups')}
+          onHide={() => hidePanel('skillGroups')}
+        />
+      ) : null}
+
       {layout.visible.installConsole && !layout.minimized.installConsole && selectedInstallCandidate ? (
         <InstallConsole
           candidate={selectedInstallCandidate}
@@ -3363,6 +3527,11 @@ export default function App() {
       {layout.visible.details && !layout.minimized.details ? (
         <SkillDetail
           selected={selectedSkill}
+          aiAnalysis={selectedSkillId ? aiAnalyses[selectedSkillId] ?? null : null}
+          aiGroupBusy={Boolean(selectedSkillId && aiGroupBusySkillId === selectedSkillId)}
+          aiGroupSuggestion={selectedSkillId ? aiGroupSuggestions[selectedSkillId] ?? null : null}
+          aiStatus={aiStatus}
+          aiBusy={Boolean(selectedSkillId && aiBusySkillId === selectedSkillId)}
           skillsById={skillsById}
           universe={universe}
           tags={selectedSkillId ? skillTags[selectedSkillId] ?? [] : []}
@@ -3371,6 +3540,9 @@ export default function App() {
           zIndex={layout.zOrder.details}
           onPositionChange={(position) => updatePanelPosition('details', position)}
           onUpdateTags={updateSkillTags}
+          onAnalyzeSkill={(skillId) => void onAnalyzeSkillWithAi(skillId)}
+          onSuggestGroup={(skillId) => void onSuggestSkillGroup(skillId)}
+          onSaveGroup={(group) => void onSaveAiSkillGroup(group)}
           onSelectSkill={focusSkill}
           onActivate={() => bringPanelToFront('details')}
           onMinimize={() => minimizePanel('details')}

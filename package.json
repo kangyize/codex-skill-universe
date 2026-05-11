@@ -12,6 +12,7 @@
     "test:scan": "node scripts/test-scan.mjs",
     "test:privacy": "node scripts/test-privacy.mjs",
     "test:semantic": "node scripts/test-local-semantic.mjs",
+    "test:ai": "node scripts/test-ai.mjs",
     "test:watcher": "node scripts/test-watcher.mjs",
     "test:recommendations": "node scripts/test-recommendations.mjs",
     "test:visual": "node scripts/visual-check.mjs"

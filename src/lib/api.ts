@@ -1,4 +1,4 @@
-import type { DeepAuditReport, InstallCheckResult, InstallPlan, RecomputeResponse, ResearchMissionResponse, ResearchProject, SkillRecommendationResponse, SkillUniverseResponse } from '../types';
+import type { AiSkillAnalysis, AiStatus, DeepAuditReport, InstallCheckResult, InstallPlan, RecomputeResponse, ResearchMissionResponse, ResearchProject, SkillGroup, SkillGroupResponse, SkillGroupSuggestion, SkillRecommendationResponse, SkillUniverseResponse } from '../types';
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -86,5 +86,41 @@ export function setActiveResearchProject(projectId: string) {
   return requestJson<ResearchMissionResponse>('/api/research-projects/active', {
     method: 'POST',
     body: JSON.stringify({ projectId })
+  });
+}
+
+export function fetchAiStatus() {
+  return requestJson<AiStatus>('/api/ai/status');
+}
+
+export function analyzeSkillWithAi(skillId: string) {
+  return requestJson<AiSkillAnalysis>('/api/ai/analyze-skill', {
+    method: 'POST',
+    body: JSON.stringify({ skillId })
+  });
+}
+
+export function suggestSkillGroupWithAi(skillId: string, analysis?: AiSkillAnalysis | null, objective?: string) {
+  return requestJson<SkillGroupSuggestion>('/api/ai/suggest-skill-group', {
+    method: 'POST',
+    body: JSON.stringify({ skillId, analysis, objective })
+  });
+}
+
+export function fetchSkillGroups() {
+  return requestJson<SkillGroupResponse>('/api/skill-groups');
+}
+
+export function saveSkillGroup(group: Partial<SkillGroup> | SkillGroupSuggestion) {
+  return requestJson<SkillGroupResponse>('/api/skill-groups/save', {
+    method: 'POST',
+    body: JSON.stringify({ group })
+  });
+}
+
+export function deleteSkillGroup(groupId: string) {
+  return requestJson<SkillGroupResponse>('/api/skill-groups/delete', {
+    method: 'POST',
+    body: JSON.stringify({ groupId })
   });
 }

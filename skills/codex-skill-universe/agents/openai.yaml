@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Skill Universe"
-  short_description: "Open and maintain the local Codex skill dashboard."
-  default_prompt: "Use $codex-skill-universe to open my local Codex Skill Universe dashboard and refresh its skill scan."
+  short_description: "Open, check, and maintain the local Codex skill dashboard."
+  default_prompt: "Use $codex-skill-universe to open my local Codex Skill Universe dashboard, refresh its skill scan, and check AI Skill Doctor status."

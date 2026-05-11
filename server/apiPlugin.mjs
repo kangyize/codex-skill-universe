@@ -1,7 +1,9 @@
 import { recomputeEmbeddings } from './embeddings.mjs';
+import { analyzeSkill, getAiStatus, suggestSkillGroup } from './aiAnalysis.mjs';
 import { buildDeepAudit, buildInstallPlan, buildSkillRecommendations, checkInstallStatus } from './recommendations.mjs';
 import { deleteResearchProject, listResearchProjects, saveResearchProject, setActiveResearchProject } from './researchProjects.mjs';
 import { buildSkillUniverse } from './relations.mjs';
+import { deleteSkillGroup, listSkillGroups, saveSkillGroup } from './skillGroups.mjs';
 import { stopSkillMonitor, subscribeSkillEvents } from './skillWatcher.mjs';
 
 function sendJson(res, status, payload) {
@@ -89,6 +91,40 @@ async function handleApi(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, { ok: true });
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/ai/status') {
+    sendJson(res, 200, await getAiStatus());
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/ai/analyze-skill') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await analyzeSkill(body.skillId));
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/ai/suggest-skill-group') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await suggestSkillGroup(body));
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/skill-groups') {
+    sendJson(res, 200, await listSkillGroups());
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/skill-groups/save') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await saveSkillGroup(body.group));
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/skill-groups/delete') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await deleteSkillGroup(body.groupId));
     return true;
   }
 

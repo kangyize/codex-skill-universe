@@ -224,7 +224,7 @@ export interface SkillRecommendationResponse {
 
 export type LayoutPreset = 'research' | 'install' | 'minimal' | 'fullscreen';
 export type PerformanceMode = 'quality' | 'balanced' | 'battery';
-export type SkillUniversePanelId = 'clusters' | 'missions' | 'recommendations' | 'details' | 'workflow' | 'installConsole' | 'timeline' | 'researchMission';
+export type SkillUniversePanelId = 'clusters' | 'missions' | 'recommendations' | 'details' | 'workflow' | 'installConsole' | 'timeline' | 'researchMission' | 'skillGroups';
 
 export interface PanelPosition {
   x: number;
@@ -244,6 +244,7 @@ export interface SkillUniverseLayoutState {
     installConsole: boolean;
     timeline: boolean;
     researchMission: boolean;
+    skillGroups: boolean;
   };
   pinned: {
     clusters: boolean;
@@ -254,6 +255,7 @@ export interface SkillUniverseLayoutState {
     installConsole: boolean;
     timeline: boolean;
     researchMission: boolean;
+    skillGroups: boolean;
   };
   positions: Partial<Record<SkillUniversePanelId, PanelPosition>>;
   minimized: Partial<Record<SkillUniversePanelId, boolean>>;
@@ -281,10 +283,91 @@ export interface CommandPaletteResult {
 
 export interface SkillUniverseTimelineEvent {
   id: string;
-  type: 'skill-change' | 'refresh' | 'semantic' | 'recommendation' | 'install-plan' | 'install-check' | 'layout' | 'deep-audit' | 'project';
+  type: 'skill-change' | 'refresh' | 'semantic' | 'recommendation' | 'install-plan' | 'install-check' | 'layout' | 'deep-audit' | 'project' | 'ai-analysis' | 'skill-group';
   title: string;
   detail: string;
   createdAt: string;
+}
+
+export interface AiStatus {
+  enabled: boolean;
+  provider: 'openai';
+  model: string;
+  baseUrl: string;
+  privacy: string;
+}
+
+export interface AiSkillIssue {
+  severity: 'low' | 'medium' | 'high';
+  title: string;
+  detail: string;
+}
+
+export interface AiSkillFix {
+  title: string;
+  detail: string;
+  effort: 'small' | 'medium' | 'large';
+}
+
+export interface AiSkillAnalysis {
+  skillId: string;
+  title: string;
+  summary: string;
+  score: number;
+  verdict: 'good' | 'watch' | 'risk';
+  issues: AiSkillIssue[];
+  fixes: AiSkillFix[];
+  suggestedDescription: string;
+  suggestedHeadings: string[];
+  triggerTerms: string[];
+  securityNotes: string[];
+  privacyNotes: string[];
+  groupSeed: {
+    name: string;
+    purpose: string;
+    defaultPrompt: string;
+  };
+  generatedAt: string;
+  model: string;
+  privacy: string;
+}
+
+export interface SkillGroupMember {
+  skillId: string;
+  role: string;
+  order: number;
+  reason: string;
+}
+
+export interface SkillGroup {
+  id: string;
+  name: string;
+  purpose: string;
+  members: SkillGroupMember[];
+  defaultPrompt: string;
+  workflowSteps: string[];
+  createdAt: string;
+  updatedAt: string;
+  warnings?: string[];
+}
+
+export interface SkillGroupSuggestion {
+  name: string;
+  purpose: string;
+  members: SkillGroupMember[];
+  defaultPrompt: string;
+  workflowSteps: string[];
+  warnings: string[];
+  generatedAt: string;
+  model: string;
+}
+
+export interface SkillGroupResponse {
+  generatedAt: string;
+  groups: SkillGroup[];
+  meta: {
+    storage: string;
+  };
 }
 
 export type ResearchStage = 'ideation' | 'novelty' | 'experiment' | 'analysis' | 'writing' | 'submission' | 'rebuttal';

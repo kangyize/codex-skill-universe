@@ -47,6 +47,36 @@ If port `5173` is busy:
 npm run dev -- --port 5174
 ```
 
+## Install as a Codex Skill
+
+This repository also includes a lightweight Codex skill package at:
+
+```text
+skills/codex-skill-universe/
+```
+
+The skill does not duplicate the web app source. It gives Codex a focused operating guide plus helper scripts for opening, refreshing, checking, and troubleshooting this local dashboard.
+
+Install it into your Codex skills directory:
+
+```powershell
+$target = "$env:USERPROFILE\.codex\skills\codex-skill-universe"
+New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+Copy-Item -Recurse -Force ".\skills\codex-skill-universe" $target
+```
+
+Validate the installed skill:
+
+```powershell
+python "$env:USERPROFILE\.codex\skills\.system\skill-creator\scripts\quick_validate.py" "$env:USERPROFILE\.codex\skills\codex-skill-universe"
+```
+
+After restarting Codex, invoke it explicitly with:
+
+```text
+Use $codex-skill-universe to open my local Codex Skill Universe dashboard and refresh its skill scan.
+```
+
 ## Configuration
 
 Copy `.env.example` to `.env.local` if you want optional embedding support:

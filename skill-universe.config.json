@@ -1,0 +1,10 @@
+{
+  "embedding": {
+    "model": "text-embedding-3-small",
+    "dimensions": 512
+  },
+  "privacy": {
+    "includeReferenceText": false,
+    "includeAssetText": false
+  }
+}

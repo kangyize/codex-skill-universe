@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+.skill-universe/
+*.log
+coverage/
+playwright-report/
+test-results/
+.DS_Store

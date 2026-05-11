@@ -1,0 +1,33 @@
+{
+  "name": "codex-skill-universe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "scan": "node scripts/scan.mjs",
+    "test:scan": "node scripts/test-scan.mjs",
+    "test:privacy": "node scripts/test-privacy.mjs",
+    "test:semantic": "node scripts/test-local-semantic.mjs",
+    "test:watcher": "node scripts/test-watcher.mjs",
+    "test:recommendations": "node scripts/test-recommendations.mjs",
+    "test:visual": "node scripts/visual-check.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.171.0",
+    "vite": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.1",
+    "@types/react-dom": "^19.0.2",
+    "@types/three": "^0.170.0",
+    "playwright": "^1.59.1",
+    "typescript": "^5.7.2"
+  }
+}

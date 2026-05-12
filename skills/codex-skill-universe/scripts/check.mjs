@@ -117,7 +117,7 @@ function runNpmScript(projectRoot, scriptName) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const projectRoot = await locateProjectRoot(args.root);
-  const scripts = ['typecheck', 'test:scan', 'test:privacy', 'test:semantic', 'test:ai'];
+  const scripts = ['typecheck', 'test:scan', 'test:privacy', 'test:semantic', 'test:ai', 'test:usage'];
   if (args.build) scripts.push('build');
 
   console.log(`Project: ${projectRoot}`);

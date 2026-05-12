@@ -9,6 +9,7 @@ export const embeddingCachePath = path.join(dataDir, 'embeddings.json');
 export const recommendationCachePath = path.join(dataDir, 'recommendations.json');
 export const projectsDir = path.join(dataDir, 'projects');
 export const skillGroupsDir = path.join(dataDir, 'skill-groups');
+export const skillUsagePath = path.join(dataDir, 'skill-usage.json');
 
 async function readJsonIfExists(filePath) {
   try {

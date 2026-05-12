@@ -1,5 +1,6 @@
 import {
   Activity,
+  BarChart3,
   Boxes,
   BrainCircuit,
   CheckCircle2,
@@ -20,6 +21,7 @@ import {
   Pin,
   PinOff,
   Play,
+  Plus,
   RefreshCw,
   Route,
   Satellite,
@@ -43,10 +45,13 @@ import {
   fetchRecommendations,
   fetchResearchProjects,
   fetchSkillGroups,
+  fetchSkillUsage,
   fetchSkills,
   recomputeEmbeddings,
+  recordSkillUse,
   refreshRecommendations,
   refreshSkills,
+  resetSkillUsage,
   saveSkillGroup,
   saveResearchProject,
   setActiveResearchProject,
@@ -54,6 +59,7 @@ import {
 } from './lib/api';
 import { AiSkillDoctor } from './components/AiSkillDoctor';
 import { SkillGroupsPanel } from './components/SkillGroupsPanel';
+import { SkillUsagePanel } from './components/SkillUsagePanel';
 import { SkillUniverse } from './components/SkillUniverse';
 import type {
   AiSkillAnalysis,
@@ -79,6 +85,7 @@ import type {
   SkillRecommendationResponse,
   SkillRelation,
   SkillTagMap,
+  SkillUsageResponse,
   SkillUniverseLayoutState,
   SkillUniverseResponse,
   SkillUniverseTimelineEvent
@@ -103,7 +110,8 @@ const PANEL_LABELS: Record<PanelId, string> = {
   installConsole: '安装方案',
   timeline: '时间轴',
   researchMission: '科研任务',
-  skillGroups: 'Skill 组'
+  skillGroups: 'Skill 组',
+  skillUsage: '使用量'
 };
 
 const PERFORMANCE_LABELS: Record<PerformanceMode, string> = {
@@ -124,7 +132,8 @@ const DEFAULT_LAYOUT: SkillUniverseLayoutState = {
     installConsole: false,
     timeline: false,
     researchMission: false,
-    skillGroups: false
+    skillGroups: false,
+    skillUsage: false
   },
   pinned: {
     clusters: true,
@@ -135,7 +144,8 @@ const DEFAULT_LAYOUT: SkillUniverseLayoutState = {
     installConsole: false,
     timeline: true,
     researchMission: false,
-    skillGroups: false
+    skillGroups: false,
+    skillUsage: false
   },
   positions: {},
   minimized: {},
@@ -163,7 +173,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       installConsole: true,
       timeline: false,
       researchMission: true,
-      skillGroups: false
+      skillGroups: false,
+      skillUsage: false
     },
     pinned: {
       clusters: true,
@@ -174,7 +185,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       installConsole: false,
       timeline: true,
       researchMission: false,
-      skillGroups: false
+      skillGroups: false,
+      skillUsage: false
     },
     positions: {},
     minimized: {},
@@ -192,7 +204,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       installConsole: false,
       timeline: false,
       researchMission: false,
-      skillGroups: false
+      skillGroups: false,
+      skillUsage: false
     },
     pinned: DEFAULT_LAYOUT.pinned,
     positions: {},
@@ -211,7 +224,8 @@ const PRESET_LAYOUTS: Record<LayoutPreset, SkillUniverseLayoutState> = {
       installConsole: false,
       timeline: false,
       researchMission: false,
-      skillGroups: false
+      skillGroups: false,
+      skillUsage: false
     },
     pinned: DEFAULT_LAYOUT.pinned,
     positions: {},
@@ -305,7 +319,8 @@ function allPanelsVisible(value: boolean): SkillUniverseLayoutState['visible'] {
     installConsole: value,
     timeline: value,
     researchMission: value,
-    skillGroups: value
+    skillGroups: value,
+    skillUsage: value
   };
 }
 
@@ -730,6 +745,7 @@ function PanelLauncher({
     { id: 'recommendations', label: PANEL_LABELS.recommendations, enabled: true },
     { id: 'researchMission', label: PANEL_LABELS.researchMission, enabled: true },
     { id: 'skillGroups', label: PANEL_LABELS.skillGroups, enabled: true },
+    { id: 'skillUsage', label: PANEL_LABELS.skillUsage, enabled: true },
     { id: 'workflow', label: PANEL_LABELS.workflow, enabled: activeWorkflow },
     { id: 'installConsole', label: PANEL_LABELS.installConsole, enabled: hasInstallCandidate },
     { id: 'timeline', label: PANEL_LABELS.timeline, enabled: true }
@@ -1074,6 +1090,8 @@ function SkillDetail({
   aiGroupSuggestion,
   aiStatus,
   aiBusy,
+  usageBusy,
+  usageCount,
   universe,
   skillsById,
   tags,
@@ -1085,6 +1103,8 @@ function SkillDetail({
   onAnalyzeSkill,
   onSuggestGroup,
   onSaveGroup,
+  onRecordUse,
+  onOpenUsage,
   onSelectSkill,
   onActivate,
   onMinimize,
@@ -1097,6 +1117,8 @@ function SkillDetail({
   aiGroupSuggestion: SkillGroupSuggestion | null;
   aiStatus: AiStatus | null;
   aiBusy: boolean;
+  usageBusy: boolean;
+  usageCount: number;
   universe: SkillUniverseResponse;
   skillsById: Map<string, SkillNode>;
   tags: string[];
@@ -1108,6 +1130,8 @@ function SkillDetail({
   onAnalyzeSkill: (skillId: string) => void;
   onSuggestGroup: (skillId: string) => void;
   onSaveGroup: (group: SkillGroupSuggestion) => void;
+  onRecordUse: (skillId: string) => void;
+  onOpenUsage: () => void;
   onSelectSkill: (id: string) => void;
   onActivate: () => void;
   onMinimize: () => void;
@@ -1172,7 +1196,28 @@ function SkillDetail({
           <Activity size={14} />
           健康 {selected.health.score}
         </span>
+        <span>
+          <BarChart3 size={14} />
+          使用 {usageCount}
+        </span>
       </div>
+
+      <section className="detail-section skill-usage-section">
+        <div className="skill-usage-detail-head">
+          <h3>使用量</h3>
+          <b>{usageCount}</b>
+        </div>
+        <div className="skill-usage-actions">
+          <button type="button" onClick={() => onRecordUse(selected.id)} disabled={usageBusy}>
+            <Plus size={14} className={usageBusy ? 'spin' : ''} />
+            记录一次使用
+          </button>
+          <button type="button" onClick={onOpenUsage}>
+            <BarChart3 size={14} />
+            查看直方图
+          </button>
+        </div>
+      </section>
 
       <HealthBlock skill={selected} />
       <AiSkillDoctor
@@ -2603,6 +2648,7 @@ export default function App() {
   const [aiAnalyses, setAiAnalyses] = useState<Record<string, AiSkillAnalysis>>({});
   const [aiGroupSuggestions, setAiGroupSuggestions] = useState<Record<string, SkillGroupSuggestion>>({});
   const [skillGroups, setSkillGroups] = useState<SkillGroupResponse | null>(null);
+  const [skillUsage, setSkillUsage] = useState<SkillUsageResponse | null>(null);
   const [installPlan, setInstallPlan] = useState<InstallPlan | null>(null);
   const [selectedInstallCandidate, setSelectedInstallCandidate] = useState<SkillCandidate | null>(null);
   const [installCheckResult, setInstallCheckResult] = useState<InstallCheckResult | null>(null);
@@ -2620,6 +2666,7 @@ export default function App() {
   const [aiBusySkillId, setAiBusySkillId] = useState<string | null>(null);
   const [aiGroupBusySkillId, setAiGroupBusySkillId] = useState<string | null>(null);
   const [skillGroupsBusy, setSkillGroupsBusy] = useState(false);
+  const [skillUsageBusy, setSkillUsageBusy] = useState(false);
   const [message, setMessage] = useState<string>('');
   const layoutSaveTimer = useRef<number | null>(null);
   const timelineSaveTimer = useRef<number | null>(null);
@@ -2666,6 +2713,9 @@ export default function App() {
     }
     if (panel === 'skillGroups' && opening && !skillGroups && !skillGroupsBusy) {
       void loadSkillGroups();
+    }
+    if (panel === 'skillUsage' && opening && !skillUsage && !skillUsageBusy) {
+      void loadSkillUsage();
     }
     setLayout((current) => {
       const shouldOpen = !current.visible[panel] || Boolean(current.minimized[panel]);
@@ -2719,6 +2769,9 @@ export default function App() {
     }
     if (panel === 'skillGroups' && !skillGroups && !skillGroupsBusy) {
       void loadSkillGroups();
+    }
+    if (panel === 'skillUsage' && !skillUsage && !skillUsageBusy) {
+      void loadSkillUsage();
     }
     setLayout((current) => ({
       ...current,
@@ -2790,6 +2843,7 @@ export default function App() {
       void loadResearchMission(false);
       void loadAiStatus();
       void loadSkillGroups(false);
+      void loadSkillUsage(false);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : '加载失败');
     } finally {
@@ -2828,6 +2882,19 @@ export default function App() {
       if (showMessage) setMessage(error instanceof Error ? error.message : 'Skill groups failed to load');
     } finally {
       setSkillGroupsBusy(false);
+    }
+  }
+
+  async function loadSkillUsage(showMessage = false) {
+    setSkillUsageBusy(true);
+    try {
+      const payload = await fetchSkillUsage();
+      setSkillUsage(payload);
+      if (showMessage) setMessage(`使用量已刷新：${payload.totalUses} 次`);
+    } catch (error) {
+      if (showMessage) setMessage(error instanceof Error ? error.message : '使用量加载失败');
+    } finally {
+      setSkillUsageBusy(false);
     }
   }
 
@@ -2929,6 +2996,9 @@ export default function App() {
   }, [universe]);
 
   const selectedSkill = selectedSkillId ? skillsById.get(selectedSkillId) : undefined;
+  const selectedSkillUsageCount = selectedSkillId
+    ? skillUsage?.items.find((item) => item.skillId === selectedSkillId)?.count ?? 0
+    : 0;
   const activeInsight = useMemo(
     () => universe?.insights.find((insight) => insight.id === activeInsightId),
     [activeInsightId, universe]
@@ -3276,6 +3346,39 @@ export default function App() {
     }
   }
 
+  async function onRecordSkillUse(skillId: string) {
+    setSkillUsageBusy(true);
+    setMessage('');
+    try {
+      const payload = await recordSkillUse(skillId, 'manual');
+      setSkillUsage(payload);
+      const skillName = skillsById.get(skillId)?.displayName ?? skillId;
+      const count = payload.items.find((item) => item.skillId === skillId)?.count ?? 0;
+      setMessage(`已记录 ${skillName} 使用 1 次，总计 ${count} 次`);
+      recordEvent('skill-usage', `记录使用：${skillName}`, `当前累计 ${count} 次。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '使用量记录失败');
+    } finally {
+      setSkillUsageBusy(false);
+    }
+  }
+
+  async function onResetSkillUse(skillId: string) {
+    if (!window.confirm('清零这个 skill 的本地使用量记录？')) return;
+    setSkillUsageBusy(true);
+    try {
+      const payload = await resetSkillUsage(skillId);
+      setSkillUsage(payload);
+      const skillName = skillsById.get(skillId)?.displayName ?? skillId;
+      setMessage(`已清零 ${skillName} 的使用量`);
+      recordEvent('skill-usage', `清零使用量：${skillName}`, '本地计数已重置。');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : '使用量清零失败');
+    } finally {
+      setSkillUsageBusy(false);
+    }
+  }
+
   async function copyInstallCommand(command: string) {
     try {
       await navigator.clipboard.writeText(command);
@@ -3504,6 +3607,26 @@ export default function App() {
         />
       ) : null}
 
+      {layout.visible.skillUsage && !layout.minimized.skillUsage ? (
+        <SkillUsagePanel
+          skills={universe.skills}
+          usageItems={skillUsage?.items ?? []}
+          busy={skillUsageBusy}
+          pinned={layout.pinned.skillUsage}
+          position={layout.positions.skillUsage}
+          zIndex={layout.zOrder.skillUsage}
+          onPositionChange={(position) => updatePanelPosition('skillUsage', position)}
+          onSelectSkill={focusSkill}
+          onRecordSkill={(skillId) => void onRecordSkillUse(skillId)}
+          onResetSkill={(skillId) => void onResetSkillUse(skillId)}
+          onRefresh={() => void loadSkillUsage(true)}
+          onActivate={() => bringPanelToFront('skillUsage')}
+          onMinimize={() => minimizePanel('skillUsage')}
+          onTogglePinned={() => updatePanelPinned('skillUsage')}
+          onHide={() => hidePanel('skillUsage')}
+        />
+      ) : null}
+
       {layout.visible.installConsole && !layout.minimized.installConsole && selectedInstallCandidate ? (
         <InstallConsole
           candidate={selectedInstallCandidate}
@@ -3532,6 +3655,8 @@ export default function App() {
           aiGroupSuggestion={selectedSkillId ? aiGroupSuggestions[selectedSkillId] ?? null : null}
           aiStatus={aiStatus}
           aiBusy={Boolean(selectedSkillId && aiBusySkillId === selectedSkillId)}
+          usageBusy={skillUsageBusy}
+          usageCount={selectedSkillUsageCount}
           skillsById={skillsById}
           universe={universe}
           tags={selectedSkillId ? skillTags[selectedSkillId] ?? [] : []}
@@ -3543,6 +3668,11 @@ export default function App() {
           onAnalyzeSkill={(skillId) => void onAnalyzeSkillWithAi(skillId)}
           onSuggestGroup={(skillId) => void onSuggestSkillGroup(skillId)}
           onSaveGroup={(group) => void onSaveAiSkillGroup(group)}
+          onRecordUse={(skillId) => void onRecordSkillUse(skillId)}
+          onOpenUsage={() => {
+            updatePanelVisibility('skillUsage', true);
+            void loadSkillUsage(false);
+          }}
           onSelectSkill={focusSkill}
           onActivate={() => bringPanelToFront('details')}
           onMinimize={() => minimizePanel('details')}

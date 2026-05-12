@@ -1,4 +1,4 @@
-import type { AiSkillAnalysis, AiStatus, DeepAuditReport, InstallCheckResult, InstallPlan, RecomputeResponse, ResearchMissionResponse, ResearchProject, SkillGroup, SkillGroupResponse, SkillGroupSuggestion, SkillRecommendationResponse, SkillUniverseResponse } from '../types';
+import type { AiSkillAnalysis, AiStatus, DeepAuditReport, InstallCheckResult, InstallPlan, RecomputeResponse, ResearchMissionResponse, ResearchProject, SkillGroup, SkillGroupResponse, SkillGroupSuggestion, SkillRecommendationResponse, SkillUniverseResponse, SkillUsageResponse } from '../types';
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -122,5 +122,23 @@ export function deleteSkillGroup(groupId: string) {
   return requestJson<SkillGroupResponse>('/api/skill-groups/delete', {
     method: 'POST',
     body: JSON.stringify({ groupId })
+  });
+}
+
+export function fetchSkillUsage() {
+  return requestJson<SkillUsageResponse>('/api/skill-usage');
+}
+
+export function recordSkillUse(skillId: string, event = 'manual') {
+  return requestJson<SkillUsageResponse>('/api/skill-usage/record', {
+    method: 'POST',
+    body: JSON.stringify({ skillId, event })
+  });
+}
+
+export function resetSkillUsage(skillId?: string) {
+  return requestJson<SkillUsageResponse>('/api/skill-usage/reset', {
+    method: 'POST',
+    body: JSON.stringify({ skillId })
   });
 }

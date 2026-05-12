@@ -1,6 +1,6 @@
 ---
 name: codex-skill-universe
-description: Operate the local Codex Skill Universe dashboard. Use when the user asks to open, start, scan, refresh, verify, troubleshoot, or maintain the Codex Skill Universe web app; inspect local Codex skills; run AI Skill Doctor; configure OpenAI API key/status; save or manage Skill Groups; check /api/health, /api/skills, /api/ai/status, or /api/skill-groups; debug Vite, Node, npm, PowerShell, port, cache, privacy, or ClawHub recommendation status for this dashboard.
+description: Operate the local Codex Skill Universe dashboard. Use when the user asks to open, start, scan, refresh, verify, troubleshoot, or maintain the Codex Skill Universe web app; inspect local Codex skills; run AI Skill Doctor; configure OpenAI API key/status; save or manage Skill Groups; view or record skill usage statistics/histograms; check /api/health, /api/skills, /api/ai/status, /api/skill-groups, or /api/skill-usage; debug Vite, Node, npm, PowerShell, port, cache, privacy, or ClawHub recommendation status for this dashboard.
 ---
 
 # Codex Skill Universe
@@ -14,8 +14,9 @@ Use this skill to help the user run and maintain the local Codex Skill Universe 
 3. Report the local URL, usually `http://127.0.0.1:5173/`, plus the skill count from `/api/skills` when available.
 4. For AI Skill Doctor requests, check `/api/ai/status`. If disabled, help the user configure `OPENAI_API_KEY`; if enabled, use the page's AI Check button or `/api/ai/analyze-skill` for a user-selected skill only.
 5. For Skill Groups, inspect `/api/skill-groups` and remind the user they are local JSON files under `.skill-universe/skill-groups/`.
-6. For maintenance checks, run `scripts/check.mjs`. Use `--build` only when the user asks for a stronger release check or before publishing changes.
-7. If startup, scans, AI analysis, Skill Groups, recommendations, or privacy behavior are unclear, read `references/operator-guide.md`.
+6. For usage statistics, inspect `/api/skill-usage`. Usage counters are local JSON under `.skill-universe/skill-usage.json`; record only user-confirmed usage, not private Codex logs.
+7. For maintenance checks, run `scripts/check.mjs`. Use `--build` only when the user asks for a stronger release check or before publishing changes.
+8. If startup, scans, AI analysis, Skill Groups, usage statistics, recommendations, or privacy behavior are unclear, read `references/operator-guide.md`.
 
 ## Commands
 
@@ -36,4 +37,5 @@ When this skill is installed under `~/.codex/skills/codex-skill-universe`, run t
 - Do not upload reference contents, assets, logs, project profiles, `.env` files, local absolute paths, or secrets. AI Skill Doctor sends only selected `SKILL.md` frontmatter/body, scan metadata, headings, trigger terms, and resource names after redaction.
 - Do not upload the full local skill catalog for AI Skill Group suggestions; related group members are added locally from the relation graph.
 - The dashboard default sends only gap keywords for ClawHub recommendation search.
+- Keep skill usage counters local. Do not parse or upload private Codex conversation logs to infer usage.
 - Treat `.skill-universe/`, `.env`, `.env.local`, logs, screenshots, and project profiles as local runtime data.

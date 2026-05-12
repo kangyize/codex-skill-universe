@@ -224,7 +224,7 @@ export interface SkillRecommendationResponse {
 
 export type LayoutPreset = 'research' | 'install' | 'minimal' | 'fullscreen';
 export type PerformanceMode = 'quality' | 'balanced' | 'battery';
-export type SkillUniversePanelId = 'clusters' | 'missions' | 'recommendations' | 'details' | 'workflow' | 'installConsole' | 'timeline' | 'researchMission' | 'skillGroups';
+export type SkillUniversePanelId = 'clusters' | 'missions' | 'recommendations' | 'details' | 'workflow' | 'installConsole' | 'timeline' | 'researchMission' | 'skillGroups' | 'skillUsage';
 
 export interface PanelPosition {
   x: number;
@@ -245,6 +245,7 @@ export interface SkillUniverseLayoutState {
     timeline: boolean;
     researchMission: boolean;
     skillGroups: boolean;
+    skillUsage: boolean;
   };
   pinned: {
     clusters: boolean;
@@ -256,6 +257,7 @@ export interface SkillUniverseLayoutState {
     timeline: boolean;
     researchMission: boolean;
     skillGroups: boolean;
+    skillUsage: boolean;
   };
   positions: Partial<Record<SkillUniversePanelId, PanelPosition>>;
   minimized: Partial<Record<SkillUniversePanelId, boolean>>;
@@ -283,10 +285,28 @@ export interface CommandPaletteResult {
 
 export interface SkillUniverseTimelineEvent {
   id: string;
-  type: 'skill-change' | 'refresh' | 'semantic' | 'recommendation' | 'install-plan' | 'install-check' | 'layout' | 'deep-audit' | 'project' | 'ai-analysis' | 'skill-group';
+  type: 'skill-change' | 'refresh' | 'semantic' | 'recommendation' | 'install-plan' | 'install-check' | 'layout' | 'deep-audit' | 'project' | 'ai-analysis' | 'skill-group' | 'skill-usage';
   title: string;
   detail: string;
   createdAt: string;
+}
+
+export interface SkillUsageItem {
+  skillId: string;
+  count: number;
+  firstUsedAt: string | null;
+  lastUsedAt: string | null;
+  lastEvent: string;
+}
+
+export interface SkillUsageResponse {
+  generatedAt: string;
+  items: SkillUsageItem[];
+  totalUses: number;
+  meta: {
+    storage: string;
+    privacy: string;
+  };
 }
 
 export interface AiStatus {

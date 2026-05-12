@@ -27,6 +27,7 @@ http://127.0.0.1:5173/api/skills
 http://127.0.0.1:5173/api/recommendations
 http://127.0.0.1:5173/api/ai/status
 http://127.0.0.1:5173/api/skill-groups
+http://127.0.0.1:5173/api/skill-usage
 ```
 
 The `/api/skills` response should include `skills`, `clusters`, `relations`, `insights`, and `meta.warnings`.
@@ -77,6 +78,26 @@ id, name, purpose, members[{ skillId, role, order, reason }], defaultPrompt, wor
 
 When AI suggests a group, the server filters out any member whose `skillId` is not already present in `/api/skills` and reports that in `warnings`.
 
+## Skill Usage Statistics
+
+Usage statistics are local counters for dashboard review. They are not inferred from private Codex conversation logs.
+
+Storage:
+
+```text
+.skill-universe/skill-usage.json
+```
+
+Useful calls:
+
+```text
+GET  /api/skill-usage
+POST /api/skill-usage/record  { "skillId": "...", "event": "manual" }
+POST /api/skill-usage/reset   { "skillId": "..." }
+```
+
+Use the page's `使用量` panel to view the histogram, and the skill detail panel's `记录一次使用` button to increment a selected skill.
+
 ## Maintenance Checks
 
 Run quick checks:
@@ -117,6 +138,7 @@ Runtime files live under `.skill-universe/` and are local cache/state:
 - `recommendations.json`
 - `projects/*.json`
 - `skill-groups/*.json`
+- `skill-usage.json`
 - screenshots and temporary logs
 
 The default dashboard behavior is local-first. It scans local `SKILL.md` metadata and does not upload reference text, assets, logs, project profiles, `.env` files, or secrets. Recommendation search sends only gap keywords to ClawHub.
@@ -124,3 +146,5 @@ The default dashboard behavior is local-first. It scans local `SKILL.md` metadat
 AI Skill Doctor sends only the selected skill's `SKILL.md` frontmatter/body, headings, trigger terms, health summary, and resource names. It redacts local absolute paths and secret-like values, and it does not read or send `references/`, `assets/`, logs, `.env` files, or `.skill-universe/` cache contents.
 
 AI Skill Group suggestions do not upload the full local skill catalog. The request is scoped to the selected skill and optional analysis summary; related members are added locally from the dashboard's relation graph.
+
+Skill usage counters stay local in `.skill-universe/skill-usage.json`. Do not parse or upload Codex session logs to infer usage automatically.

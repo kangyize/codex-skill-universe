@@ -4,6 +4,7 @@ import { buildDeepAudit, buildInstallPlan, buildSkillRecommendations, checkInsta
 import { deleteResearchProject, listResearchProjects, saveResearchProject, setActiveResearchProject } from './researchProjects.mjs';
 import { buildSkillUniverse } from './relations.mjs';
 import { deleteSkillGroup, listSkillGroups, saveSkillGroup } from './skillGroups.mjs';
+import { listSkillUsage, recordSkillUse, resetSkillUsage } from './skillUsage.mjs';
 import { stopSkillMonitor, subscribeSkillEvents } from './skillWatcher.mjs';
 
 function sendJson(res, status, payload) {
@@ -125,6 +126,23 @@ async function handleApi(req, res) {
   if (req.method === 'POST' && url.pathname === '/api/skill-groups/delete') {
     const body = await readJsonBody(req);
     sendJson(res, 200, await deleteSkillGroup(body.groupId));
+    return true;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/skill-usage') {
+    sendJson(res, 200, await listSkillUsage());
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/skill-usage/record') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await recordSkillUse(body.skillId, body));
+    return true;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/skill-usage/reset') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await resetSkillUsage(body.skillId));
     return true;
   }
 

@@ -18,6 +18,7 @@ The app is local-first. It does not require an OpenAI API key for the default ex
   - evidence-chain prompts
 - AI Skill Doctor for user-triggered skill analysis, repair suggestions, trigger-word cleanup, and Skill Group suggestions.
 - Local Skill Groups saved as reusable ordered workflows with a default prompt.
+- Local skill usage counters with a histogram panel for seeing which skills are used most.
 - Layout presets, draggable/minimizable panels, local layout snapshots, performance modes, tags, and timeline history.
 - Privacy-first summaries for semantic processing. References and assets are not uploaded by default.
 
@@ -108,6 +109,7 @@ Runtime data is stored under `.skill-universe/` and is ignored by git. This can 
 - screenshots from visual checks
 - local research project profiles
 - local Skill Groups in `skill-groups/*.json`
+- local skill usage counters in `skill-usage.json`
 - timeline and temporary state
 
 Do not commit `.skill-universe/` or `.env.local`.
@@ -124,6 +126,7 @@ npm run test:scan
 npm run test:privacy
 npm run test:semantic
 npm run test:ai
+npm run test:usage
 npm run test:watcher
 npm run test:recommendations
 npm run test:visual
@@ -145,6 +148,7 @@ Skill Universe is designed to be local-first:
 - Recommendation search sends only gap keywords to ClawHub.
 - Research Mission Mode stores project files locally in `.skill-universe/projects/*.json`.
 - Skill Groups are stored locally in `.skill-universe/skill-groups/*.json`.
+- Skill usage counters are stored locally in `.skill-universe/skill-usage.json`; they are not uploaded or committed.
 
 See [PRIVACY.md](PRIVACY.md) for more detail.
 
